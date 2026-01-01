@@ -1,4 +1,4 @@
-﻿-- %USERPROFILE%\AppData\Local\nvim\ftplugin\vimdoc.lua
+﻿-- ~/.config/nvim/ftplugin/vimdoc.lua
 -- safe wrapper: only start treesitter if parser exists
 pcall(function()
   local ok, parsers = pcall(require, "nvim-treesitter.parsers")

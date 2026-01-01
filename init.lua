@@ -1,7 +1,8 @@
-vim.opt.shell = "pwsh.exe"
---vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command"
---vim.opt.shellquote = ""
---vim.opt.shellxquote = ""
+-- Shell configuration for Linux
+vim.opt.shell = "/usr/bin/zsh"
+vim.opt.shellcmdflag = "-lc"
+vim.opt.shellquote = ""
+vim.opt.shellxquote = ""
 
 -- SAFETY WRAPPER: prevent runtime ftplugins from crashing when a parser is missing
 if vim and vim.treesitter and type(vim.treesitter.start) == "function" then
@@ -22,6 +23,7 @@ end
 require("Gaurav.core")
 require("Gaurav.lazy")
 require("current-theme")
+
 -- Terminal runner
 local ok, terminal = pcall(require, 'Gaurav.core.terminal')
 if ok and terminal and type(terminal.setup) == "function" then
@@ -29,9 +31,3 @@ if ok and terminal and type(terminal.setup) == "function" then
 else
   print("Failed to load terminal.lua")
 end
-
-
-
-
-
-

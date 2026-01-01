@@ -137,7 +137,7 @@ return {
                         section = "terminal",
                         
                         
-                        cmd = "\"C:\\Users\\gaura\\scoop\\shims\\ascii-image-converter.exe\" \"C:\\Users\\gaura\\Desktop\\profiles.jpg\" -C -c -W 80",
+                        cmd = "chafa ~/Pictures/profiles.jpg --size 80x20 --colors 256 2>/dev/null || echo \"Welcome to Neovim\"",
                         
                         random = 15,
                         pane = 2,

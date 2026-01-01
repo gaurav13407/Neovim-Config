@@ -1,4 +1,4 @@
--- terminal.lua - Smart Terminal Runner for Neovim (Windows)
+-- terminal.lua - Smart Terminal Runner for Neovim (Linux/Unix)
 local M = {}
 
 -- Store terminal state
@@ -12,14 +12,14 @@ local term_state = {
 -- Language templates (auto-cleanup for compiled languages)
 local templates = {
   ["c"]    = {
-    compile = 'gcc "%s" -o "%s.exe"',
-    run = '"%s.exe"',
-    cleanup = '"%s.exe"',
+    compile = 'gcc "%s" -o "%s"',
+    run = '"%s"',
+    cleanup = '"%s"',
   },
   ["cpp"]  = {
-    compile = 'g++ "%s" -o "%s.exe"',
-    run = '"%s.exe"',
-    cleanup = '"%s.exe"',
+    compile = 'g++ "%s" -o "%s"',
+    run = '"%s"',
+    cleanup = '"%s"',
   },
   ["java"] = {
     compile = 'javac "%s"',
@@ -27,19 +27,34 @@ local templates = {
     cleanup = '"%s.class"',
   },
   ["rs"]   = {
-    compile = 'rustc "%s" -o "%s_temp.exe"',
-    run = '"%s_temp.exe"',
-    cleanup = '"%s_temp.exe"',
+    compile = 'rustc "%s" -o "%s_temp"',
+    run = '"%s_temp"',
+    cleanup = '"%s_temp"',
   },
   ["py"]   = {
-    run = 'python "%s"',
+    run = 'python3 "%s"',
+  },
+  ["js"]   = {
+    run = 'node "%s"',
+  },
+  ["ts"]   = {
+    run = 'npx ts-node "%s"',
+  },
+  ["sh"]   = {
+    run = 'bash "%s"',
+  },
+  ["go"]   = {
+    run = 'go run "%s"',
+  },
+  ["lua"]  = {
+    run = 'lua "%s"',
   },
 }
 
 -- Send command to terminal safely
 local function send_to_term(cmd)
   if term_state.job_id and term_state.buf and vim.api.nvim_buf_is_valid(term_state.buf) then
-    pcall(vim.api.nvim_chan_send, term_state.job_id, cmd .. "\r")
+    pcall(vim.api.nvim_chan_send, term_state.job_id, cmd .. "\n")
   end
 end
 
@@ -73,26 +88,8 @@ local function create_or_show_terminal()
     return true
   end
   
-  -- Save current shell settings
-  local saved_shell = vim.o.shell
-  local saved_shellcmdflag = vim.o.shellcmdflag
-  local saved_shellquote = vim.o.shellquote
-  local saved_shellxquote = vim.o.shellxquote
-  
-  -- Temporarily force CMD
-  vim.o.shell = "cmd.exe"
-  vim.o.shellcmdflag = "/c"
-  vim.o.shellquote = ""
-  vim.o.shellxquote = ""
-  
-  -- Create terminal with CMD
+  -- Create terminal with default shell (bash/zsh on Linux)
   vim.cmd("belowright vsplit | terminal")
-  
-  -- Restore original shell settings
-  vim.o.shell = saved_shell
-  vim.o.shellcmdflag = saved_shellcmdflag
-  vim.o.shellquote = saved_shellquote
-  vim.o.shellxquote = saved_shellxquote
   
   term_state.buf = vim.api.nvim_get_current_buf()
   term_state.win = vim.api.nvim_get_current_win()
@@ -148,20 +145,22 @@ local function run_file()
   
   local is_existing = create_or_show_terminal()
   
-  -- Build commands for CMD
-  local cd_cmd = 'cd /d "' .. dir .. '"'
+  -- Build commands for Linux shell
+  local cd_cmd = 'cd "' .. dir .. '"'
   local full_cmd
   
   if template.compile then
-    local compile_cmd = string.format(template.compile, file, name)
-    local run_cmd = string.format(template.run, name)
-    local cleanup_file = string.format(template.cleanup, name)
+    local compile_cmd = string.format(template.compile, file, dir .. "/" .. name)
+    local run_cmd = string.format(template.run, dir .. "/" .. name)
+    local cleanup_file = string.format(template.cleanup, dir .. "/" .. name)
     
     if ext == "java" then
       run_cmd = 'java "' .. name .. '"'
+      cleanup_file = name .. ".class"
     end
     
-    full_cmd = compile_cmd .. ' && ' .. run_cmd .. ' && timeout /t 1 /nobreak >nul && del ' .. cleanup_file
+    -- Compile, run, then cleanup
+    full_cmd = compile_cmd .. ' && ' .. run_cmd .. ' ; sleep 0.5 && rm -f "' .. cleanup_file .. '"'
   else
     full_cmd = string.format(template.run, file)
   end
@@ -180,6 +179,16 @@ local function run_file()
   end, delay)
 end
 
+-- Toggle terminal visibility
+local function toggle_terminal()
+  if is_term_valid() then
+    hide_terminal()
+  else
+    create_or_show_terminal()
+    vim.cmd("startinsert")
+  end
+end
+
 -- Setup keymaps
 function M.setup()
   vim.keymap.set("n", "<leader>w", function()
@@ -189,6 +198,10 @@ function M.setup()
   vim.keymap.set({"n", "t"}, "<leader>q", function()
     hide_terminal()
   end, { desc = "Hide terminal", noremap = true, silent = true })
+  
+  vim.keymap.set({"n", "t"}, "<C-`>", function()
+    toggle_terminal()
+  end, { desc = "Toggle terminal", noremap = true, silent = true })
 end
 
 return M
